@@ -158,82 +158,90 @@ async function promise(runFunc, msg) {
 }
 
 async function revertBack(fileName, fileType) {
-    await promise(fs.rename(
+    await oraPromise(promise(fs.rename(
         fileName + ".bak",
         fileName + fileType,
         (err) => {
             if (err) throw err;
         }
-    ), "Reverted to original profile")
+    ), "Reverted to original profile"),
+        {
+            discardStdin: false,
+            text: 'Reverting...',
+            spinner: cliSpinners.aesthetic,
+            successText: "Reverted back to original state!",
+            failText: "Error"
+        }
+    )
 }
 
 async function performBackupAndAppendNew(fileName, fileType, appendLine) {
     fs.readFile(fileName + fileType, async function (err, data) {
         if (err) throw err;
         if (data.includes(appendLine)) {
-            // console.log(data)
             let revertChoice = await (prompts(prompt.revert, { onCancel }))
             const { RevertSelection } = revertChoice;
             if (RevertSelection) {
                 revertBack(fileName, fileType);
             } else {
             };
+        } else {
+
+            //? Rename old profile file with a new extension .bak
+            await oraPromise(promise(fs.rename(
+                fileName + fileType,
+                fileName + ".bak",
+                (err) => {
+                    if (err) throw err;
+                }
+            ), ""),
+                {
+                    discardStdin: false,
+                    text: 'Backing up...',
+                    spinner: cliSpinners.aesthetic,
+                    successText: "Backed up old profile!...(.bak) & created a new one (.ps1)",
+                    failText: "Error"
+                }
+            );
+
+            //? Copy data from.bak file into a new profile file
+            await oraPromise(promise(fs.copyFileSync(
+                fileName + ".bak",
+                fileName + fileType
+            ), ``)
+                ,
+                {
+                    discardStdin: false,
+                    text: 'Copying...',
+                    spinner: cliSpinners.aesthetic,
+                    successText: `Copied data from .bak to new profile`,
+                    // successText: `Copied data from .bak to new profile ${fileName.replaceAll("/", `\\`) + fileType}`,
+                    failText: "Error"
+                }
+            );
+
+            //? Append the line that will execute the node script
+            await oraPromise(promise(fs.appendFileSync(fileName + fileType, appendLine, 'utf8'), ""),
+                {
+                    discardStdin: false,
+                    text: 'Appending...',
+                    spinner: cliSpinners.aesthetic,
+                    successText: "Appended run command to profile",
+                    failText: "Error"
+                }
+            )
+            //? Completion Spinner
+            await oraPromise(promise("", ""),
+                {
+                    discardStdin: false,
+                    text: 'Completing',
+                    spinner: cliSpinners.aesthetic,
+                    successText: "Completed, open a new terminal and try it",
+                    failText: "Error"
+                }
+            );
         }
     });
-
-    //? Rename old profile file with a new extension .bak
-    await oraPromise(promise(fs.rename(
-        fileName + fileType,
-        fileName + ".bak",
-        (err) => {
-            if (err) throw err;
-        }
-    ), ""),
-        {
-            discardStdin: false,
-            text: 'Backing up...',
-            spinner: cliSpinners.aesthetic,
-            successText: "Backed up old profile!...(.bak) & created a new one (.ps1)",
-            failText: "Error"
-        }
-    );
-
-    //? Copy data from.bak file into a new profile file
-    await oraPromise(promise(fs.copyFileSync(
-        fileName + ".bak",
-        fileName + fileType
-    ), ``)
-        ,
-        {
-            discardStdin: false,
-            text: 'Copying...',
-            spinner: cliSpinners.aesthetic,
-            successText: `Copied data from .bak to new profile`,
-            // successText: `Copied data from .bak to new profile ${fileName.replaceAll("/", `\\`) + fileType}`,
-            failText: "Error"
-        }
-    );
-
-    //? Append the line that will execute the node script
-    await oraPromise(promise(fs.appendFileSync(fileName + fileType, appendLine, 'utf8'), ""),
-        {
-            discardStdin: false,
-            text: 'Appending...',
-            spinner: cliSpinners.aesthetic,
-            successText: "Appended run command to profile",
-            failText: "Error"
-        }
-    )
-    //? Completion Spinner
-    await oraPromise(promise("", ""),
-        {
-            discardStdin: false,
-            text: 'Completing',
-            spinner: cliSpinners.aesthetic,
-            successText: "Completed, open a new terminal and try it",
-            failText: "Error"
-        }
-    );
 };
 
 function checkOS() {
