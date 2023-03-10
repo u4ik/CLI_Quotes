@@ -197,6 +197,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             ), ""),
                 {
                     discardStdin: false,
+                    prefixText: "yodawg",
                     text: 'Backing up...',
                     spinner: cliSpinners.aesthetic,
                     successText: "Backed up old profile!...(.bak) & created a new one (.ps1)",
