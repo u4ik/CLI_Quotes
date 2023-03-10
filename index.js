@@ -50,22 +50,13 @@ async function main() {
             let userInfo = checkOS();
             let setupChoice = await (prompts(prompt.setup, { onCancel }))
             const { SetupSelection } = setupChoice;
+            //? Once test published switch paths from dev to prod....
+            // const npmPath = os.userInfo().homedir + "/AppData/Roaming/npm/node_modules/cli-quotes/"
+            const npmPath = "C:/Coding/MyTools/NPM/QuoteDisplay/index.js -q";
             if (SetupSelection) {
                 switch (userInfo.System.Shell) {
                     case "pwsh.exe": {
-                        //? Once test published switch paths from dev to prod....
-                        // const npmPath = os.userInfo().homedir + "/AppData/Roaming/npm/node_modules/cli-quotes/"
-                        const npmPath = "C:/Coding/MyTools/NPM/QuoteDisplay/index.js -q";
-                        const profileExt = ".ps1"
-                        const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
-                        const appendLine = "\nnode " + npmPath;
-                        if (checkWinPowershellProfile()) {
-                            performBackupAndAppendNew(powershellProfileDir + "/Microsoft.PowerShell_profile", profileExt, appendLine);
-                        } else {
-                            console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
-                            fs.writeFileSync(`${os.userInfo().homedir}` + "/Documents/WindowsPowerShell" + "/Microsoft.PowerShell_profile.ps1", "");
-                            performBackupAndAppendNew(powershellProfileDir + "/Microsoft.PowerShell_profile", profileExt, appendLine);
-                        }
+                        handlePowershell(npmPath);
                         break;
                     }
                     default: {
@@ -73,14 +64,22 @@ async function main() {
                     }
                 }
             } else {
-                main();
+                // main();
+                switch (userInfo.System.Shell) {
+                    case "pwsh.exe": {
+                        handlePowershell(npmPath);
+                        break;
+                    }
+                    default: {
+                        console.log("Shell not supported", userInfo);
+                    }
+                }
             }
             break;
         }
         case "About": {
             console.log(red(`
 			CLI Quotes ${version} \n`) + '\n' +
-
                 '* Randomized Quotes\n' + '\n' +
                 '* Option available to run quote on each terminal session.\n' + '\n' +
                 '* To run quote once pass the flag -q.\n'
@@ -92,6 +91,7 @@ async function main() {
         }
     }
 };
+
 
 const prompt = {
     menu: [{
@@ -108,13 +108,13 @@ const prompt = {
     setup: [{
         type: 'confirm',
         name: 'SetupSelection',
-        message: 'Do you want to display a quote at the start of each terminal session?',
+        message: 'Do you want to toggle the display of a quote on each new terminal instance?',
         initial: false,
     }],
     revert: [{
         type: 'confirm',
         name: 'RevertSelection',
-        message: 'Autorun quotes already enabled, would you like to turn it off?',
+        message: 'Autorun quotes is enabled, would you like to turn it off?',
         initial: false,
     }]
 };
@@ -153,6 +153,19 @@ function checkWinPowershellProfile() {
     }
 };
 
+function handlePowershell(npmPath) {
+    const profileExt = ".ps1"
+    const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
+    const appendLine = "\nnode " + npmPath;
+    if (checkWinPowershellProfile()) {
+        performBackupAndAppendNew(powershellProfileDir + "/Microsoft.PowerShell_profile", profileExt, appendLine);
+    } else {
+        console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
+        fs.writeFileSync(`${os.userInfo().homedir}` + "/Documents/WindowsPowerShell" + "/Microsoft.PowerShell_profile.ps1", "");
+        performBackupAndAppendNew(powershellProfileDir + "/Microsoft.PowerShell_profile", profileExt, appendLine);
+    }
+}
+
 async function promise(runFunc, msg) {
     return msg
 }
@@ -187,7 +200,6 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             } else {
             };
         } else {
-
             //? Rename old profile file with a new extension .bak
             await oraPromise(promise(fs.rename(
                 fileName + fileType,
@@ -210,8 +222,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             await oraPromise(promise(fs.copyFileSync(
                 fileName + ".bak",
                 fileName + fileType
-            ), ``)
-                ,
+            ), ``),
                 {
                     discardStdin: false,
                     indent: 2,
