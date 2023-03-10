@@ -31,7 +31,6 @@ async function main() {
         case '-q': {
             console.log(await getQuote());
             process.exit();
-
         }
         default: {
         }
@@ -150,7 +149,6 @@ function checkWinPowershellProfile() {
             }
         };
     } catch (err) {
-        console.log(err)
         return false;
     }
 };
