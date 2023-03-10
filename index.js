@@ -31,8 +31,7 @@ async function main() {
         case '-q': {
             console.log(await getQuote());
             process.exit();
-            // process.exitCode = 1;
-            // break;
+
         }
         default: {
         }
@@ -151,7 +150,7 @@ function checkWinPowershellProfile() {
             }
         };
     } catch (err) {
-        // console.log(err)
+        console.log(err)
         return false;
     }
 };
@@ -166,8 +165,6 @@ async function revertBack(fileName, fileType) {
         fileName + fileType,
         (err) => {
             if (err) throw err;
-            // console.log('Backed up old profile!...');
-            // console.log('Created a new one...');
         }
     ), "Reverted to original profile")
 }
@@ -192,8 +189,6 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
         fileName + ".bak",
         (err) => {
             if (err) throw err;
-            // console.log('Backed up old profile!...');
-            // console.log('Created a new one...');
         }
     ), ""),
         {
@@ -246,17 +241,15 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
 function checkOS() {
     let userInfo = {
         System: {
-            Name: os.userInfo().username, // Amit 
-            Platform: process.platform, // win32
-            OS: process.env.OS, // Windows_NT
+            Name: os.userInfo().username,
+            Platform: process.platform,
+            OS: process.env.OS,
             Shell: ""
         }
     }
     if (userInfo.System.Platform.toLowerCase().includes("win")) {
-        // console.log("you're using windows")
         userInfo.System.Shell = "pwsh.exe" || "cmd.exe"
     }
-    // fs.writeFileSync(`${os.userInfo().homedir}` + "/Documents/WindowsPowerShell/Microsoft.PowerShell_profile_test.ps1", "fuck")
     return userInfo;
 };
 
