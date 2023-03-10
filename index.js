@@ -17,7 +17,6 @@ const __dirname = dirname(__filename);
 const { version } = cRequire('./package.json')
 const { green, red, blue } = pkg;
 
-
 /**TODO : -  
  * 
  * npm root -g - command for finding root npm library
@@ -59,15 +58,11 @@ async function main() {
                         //? Once test published switch paths from dev to prod....
                         // const npmPath = os.userInfo().homedir + "/AppData/Roaming/npm/node_modules/cli-quotes/"
                         const npmPath = "C:/Coding/MyTools/NPM/QuoteDisplay/index.js -q";
-
                         const profileExt = ".ps1"
                         const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
-
                         const appendLine = "\nnode " + npmPath;
-
                         if (checkWinPowershellProfile()) {
                             performBackupAndAppendNew(powershellProfileDir + "/Microsoft.PowerShell_profile", profileExt, appendLine);
-
                         } else {
                             console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
                             fs.writeFileSync(`${os.userInfo().homedir}` + "/Documents/WindowsPowerShell" + "/Microsoft.PowerShell_profile.ps1", "");
@@ -82,7 +77,6 @@ async function main() {
             } else {
                 main();
             }
-            // console.log(userInfo);
             break;
         }
         case "About": {
@@ -110,7 +104,6 @@ const prompt = {
             { title: '🗨️ Give Me A Quote', description: '', value: 'Quote' },
             { title: 'ℹ️ About', description: '', value: 'About' },
             { title: '🛠️ Setup', description: 'Optional setup', value: 'Setup' },
-
         ],
         initial: 0,
     }],
@@ -143,7 +136,6 @@ function executeCommand(command, shell) {
             console.log(`stderr: ${stderr}`);
             return;
         }
-        // console.log(`stdout: ${stdout}`);
         console.log(`${stdout}`);
     });
 };
@@ -249,7 +241,6 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             failText: "Error"
         }
     );
-
 };
 
 function checkOS() {
@@ -283,8 +274,7 @@ function displayTitle(font) {
         independentGradient: false, // define if you want to recalculate the gradient for each new line
         transitionGradient: true,  // define if this is a transition between colors directly
         env: 'node'                 // define the environment CFonts is being executed in
-    }
-    );
+    });
 };
 
 function onCancel() {
