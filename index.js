@@ -164,12 +164,13 @@ async function revertBack(fileName, fileType) {
         (err) => {
             if (err) throw err;
         }
-    ), "Reverted to original profile"),
+    ), ""),
         {
             discardStdin: false,
+            indent: 2,
             text: 'Reverting...',
             spinner: cliSpinners.aesthetic,
-            successText: "Reverted back to original state!",
+            successText: "Reverted from backup!",
             failText: "Error"
         }
     )
@@ -197,7 +198,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             ), ""),
                 {
                     discardStdin: false,
-                    prefixText: "yodawg",
+                    indent: 2,
                     text: 'Backing up...',
                     spinner: cliSpinners.aesthetic,
                     successText: "Backed up old profile!...(.bak) & created a new one (.ps1)",
@@ -213,6 +214,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
                 ,
                 {
                     discardStdin: false,
+                    indent: 2,
                     text: 'Copying...',
                     spinner: cliSpinners.aesthetic,
                     successText: `Copied data from .bak to new profile`,
@@ -225,6 +227,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             await oraPromise(promise(fs.appendFileSync(fileName + fileType, appendLine, 'utf8'), ""),
                 {
                     discardStdin: false,
+                    indent: 2,
                     text: 'Appending...',
                     spinner: cliSpinners.aesthetic,
                     successText: "Appended run command to profile",
@@ -235,6 +238,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             await oraPromise(promise("", ""),
                 {
                     discardStdin: false,
+                    indent: 2,
                     text: 'Completing',
                     spinner: cliSpinners.aesthetic,
                     successText: "Completed, open a new terminal and try it",
