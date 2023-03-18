@@ -8,28 +8,26 @@ import CFonts from 'cfonts';
 import ora, { oraPromise } from 'ora';
 import pkg from 'kleur';
 import { exec } from "child_process";
-const cRequire = createRequire(import.meta.url); // construct the require method
-import { createRequire } from "module"; // Bring in the ability to create the 'require' method
+const cRequire = createRequire(import.meta.url);
+import { createRequire } from "module";
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const { version } = cRequire('./package.json')
+const { version } = cRequire('./package.json');
 const { green, red, blue } = pkg;
 
 /**TODO : -  
  * 
  * npm root -g - command for finding root npm library
- * ?    - Delete 
- * ?        - REQUIREMENTS - 
- * ?            - remove quote execution from ps1.
+ * ? - FIX ANSWERING NO WITH ESTABLISHED PROFILE IN SETUP. 
  * ? - 
 */
 
 async function main() {
     switch (process.argv[2]) {
         case '-q': {
-            console.log(await getQuote());
+            await getLoaderAndQuote();
             process.exit();
         }
         default: {
@@ -43,7 +41,7 @@ async function main() {
 
     switch (MenuSelection) {
         case "Quote": {
-            console.log('\n', await getQuote(), '\n');
+            await getLoaderAndQuote();
             break;
         }
         case "Setup": {
@@ -53,10 +51,31 @@ async function main() {
             //? Once test published switch paths from dev to prod....
             // const npmPath = os.userInfo().homedir + "/AppData/Roaming/npm/node_modules/cli-quotes/"
             const npmPath = "C:/Coding/MyTools/NPM/QuoteDisplay/index.js -q";
+
+            const profileExt = ".ps1"
+            const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
+            const powershellProfileFile = powershellProfileDir + "/Microsoft.PowerShell_profile";
+            const appendLine = "\nnode " + npmPath;
+
             if (SetupSelection) {
                 switch (userInfo.System.Shell) {
                     case "pwsh.exe": {
-                        handlePowershell(npmPath);
+                        if (checkWinPowershellProfile()) {
+                            if (checkRevert(powershellProfileFile + profileExt, appendLine)) {
+                                let revertChoice = await (prompts(prompt.revert, { onCancel }))
+                                const { RevertSelection } = revertChoice;
+                                if (RevertSelection) {
+                                    revertBack(powershellProfileFile, profileExt);
+                                } else {
+                                };
+                            } else {
+                                performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
+                            }
+                        } else {
+                            console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
+                            fs.writeFileSync(powershellProfileFile + profileExt, "");
+                            performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
+                        }
                         break;
                     }
                     default: {
@@ -64,10 +83,17 @@ async function main() {
                     }
                 }
             } else {
-                // main();
                 switch (userInfo.System.Shell) {
                     case "pwsh.exe": {
-                        handlePowershell(npmPath);
+                        if (checkWinPowershellProfile()) {
+                            if (checkRevert(powershellProfileFile + profileExt, appendLine)) {
+                                revertBack(powershellProfileFile, profileExt);
+                            } else {
+                                console.log("Nothing to revert");
+                            }
+                        } else {
+                            console.log("Profile does not exist.");
+                        };
                         break;
                     }
                     default: {
@@ -79,7 +105,7 @@ async function main() {
         }
         case "About": {
             console.log(red(`
-			CLI Quotes ${version} \n`) + '\n' +
+            CLI Quotes ${version} \n`) + '\n' +
                 '* Randomized Quotes\n' + '\n' +
                 '* Option available to run quote on each terminal session.\n' + '\n' +
                 '* To run quote once pass the flag -q.\n'
@@ -92,6 +118,18 @@ async function main() {
     }
 };
 
+async function checkRevert(file, line) {
+    fs.readFile(file, async function (err, data) {
+        if (err) throw err;
+        if (data.includes(line)) {
+            console.log('shit is here');
+            return true
+        } else {
+            console.log('shit is NOT here');
+            return false;
+        }
+    })
+};
 
 const prompt = {
     menu: [{
@@ -121,7 +159,21 @@ const prompt = {
 
 async function getQuote() {
     const response = await (await (fetch("https://api.quotable.io/random"))).json();
-    return `${response.content} \n- ${response.author}`
+    return `${response.content} \n- ${response.author} \n`
+};
+
+async function getLoaderAndQuote() {
+    console.log("");
+    await oraPromise(getQuote(),
+        {
+            discardStdin: false,
+            indent: 0,
+            text: 'Loading...',
+            spinner: cliSpinners.aesthetic,
+            successText: r => r,
+            failText: "Error"
+        }
+    )
 };
 
 function executeCommand(command, shell) {
@@ -153,22 +205,14 @@ function checkWinPowershellProfile() {
     }
 };
 
-function handlePowershell(npmPath) {
-    const profileExt = ".ps1"
-    const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
-    const appendLine = "\nnode " + npmPath;
-    if (checkWinPowershellProfile()) {
-        performBackupAndAppendNew(powershellProfileDir + "/Microsoft.PowerShell_profile", profileExt, appendLine);
-    } else {
-        console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
-        fs.writeFileSync(`${os.userInfo().homedir}` + "/Documents/WindowsPowerShell" + "/Microsoft.PowerShell_profile.ps1", "");
-        performBackupAndAppendNew(powershellProfileDir + "/Microsoft.PowerShell_profile", profileExt, appendLine);
-    }
-}
+function handlePowershell(npmPath, flag) {
+
+
+};
 
 async function promise(runFunc, msg) {
     return msg
-}
+};
 
 async function revertBack(fileName, fileType) {
     await oraPromise(promise(fs.rename(
@@ -187,77 +231,75 @@ async function revertBack(fileName, fileType) {
             failText: "Error"
         }
     )
-}
+};
 
 async function performBackupAndAppendNew(fileName, fileType, appendLine) {
-    fs.readFile(fileName + fileType, async function (err, data) {
-        if (err) throw err;
-        if (data.includes(appendLine)) {
-            let revertChoice = await (prompts(prompt.revert, { onCancel }))
-            const { RevertSelection } = revertChoice;
-            if (RevertSelection) {
-                revertBack(fileName, fileType);
-            } else {
-            };
-        } else {
-            //? Rename old profile file with a new extension .bak
-            await oraPromise(promise(fs.rename(
-                fileName + fileType,
-                fileName + ".bak",
-                (err) => {
-                    if (err) throw err;
-                }
-            ), ""),
-                {
-                    discardStdin: false,
-                    indent: 2,
-                    text: 'Backing up...',
-                    spinner: cliSpinners.aesthetic,
-                    successText: "Backed up old profile!...(.bak) & created a new one (.ps1)",
-                    failText: "Error"
-                }
-            );
-
-            //? Copy data from.bak file into a new profile file
-            await oraPromise(promise(fs.copyFileSync(
-                fileName + ".bak",
-                fileName + fileType
-            ), ``),
-                {
-                    discardStdin: false,
-                    indent: 2,
-                    text: 'Copying...',
-                    spinner: cliSpinners.aesthetic,
-                    successText: `Copied data from .bak to new profile`,
-                    // successText: `Copied data from .bak to new profile ${fileName.replaceAll("/", `\\`) + fileType}`,
-                    failText: "Error"
-                }
-            );
-
-            //? Append the line that will execute the node script
-            await oraPromise(promise(fs.appendFileSync(fileName + fileType, appendLine, 'utf8'), ""),
-                {
-                    discardStdin: false,
-                    indent: 2,
-                    text: 'Appending...',
-                    spinner: cliSpinners.aesthetic,
-                    successText: "Appended run command to profile",
-                    failText: "Error"
-                }
-            )
-            //? Completion Spinner
-            await oraPromise(promise("", ""),
-                {
-                    discardStdin: false,
-                    indent: 2,
-                    text: 'Completing',
-                    spinner: cliSpinners.aesthetic,
-                    successText: "Completed, open a new terminal and try it",
-                    failText: "Error"
-                }
-            );
+    // fs.readFile(fileName + fileType, async function (err, data) {
+    //     if (err) throw err;
+    //     if (data.includes(appendLine)) {
+    //         let revertChoice = await (prompts(prompt.revert, { onCancel }))
+    //         const { RevertSelection } = revertChoice;
+    //         if (RevertSelection) {
+    //             revertBack(fileName, fileType);
+    //         } else {
+    //         };
+    //     } else {
+    //? Rename old profile file with a new extension .bak
+    await oraPromise(promise(fs.rename(
+        fileName + fileType,
+        fileName + ".bak",
+        (err) => {
+            if (err) throw err;
         }
-    });
+    ), ""),
+        {
+            discardStdin: false,
+            indent: 2,
+            text: 'Backing up...',
+            spinner: cliSpinners.aesthetic,
+            successText: "Backed up old profile!...(.bak) & created a new one (.ps1)",
+            failText: "Error"
+        }
+    );
+
+    //? Copy data from.bak file into a new profile file
+    await oraPromise(promise(fs.copyFileSync(
+        fileName + ".bak",
+        fileName + fileType
+    ), ``),
+        {
+            discardStdin: false,
+            indent: 2,
+            text: 'Copying...',
+            spinner: cliSpinners.aesthetic,
+            successText: `Copied data from .bak to new profile`,
+            // successText: `Copied data from .bak to new profile ${fileName.replaceAll("/", `\\`) + fileType}`,
+            failText: "Error"
+        }
+    );
+
+    //? Append the line that will execute the node script
+    await oraPromise(promise(fs.appendFileSync(fileName + fileType, appendLine, 'utf8'), ""),
+        {
+            discardStdin: false,
+            indent: 2,
+            text: 'Appending...',
+            spinner: cliSpinners.aesthetic,
+            successText: "Appended run command to profile",
+            failText: "Error"
+        }
+    )
+    //? Completion Spinner
+    await oraPromise(promise("", ""),
+        {
+            discardStdin: false,
+            indent: 2,
+            text: 'Completing',
+            spinner: cliSpinners.aesthetic,
+            successText: "Completed, open a new terminal session to try it! :)",
+            failText: "Error"
+        }
+    );
 };
 
 function checkOS() {
