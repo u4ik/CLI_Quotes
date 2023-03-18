@@ -52,7 +52,7 @@ async function main() {
             // const npmPath = os.userInfo().homedir + "/AppData/Roaming/npm/node_modules/cli-quotes/"
             const npmPath = "C:/Coding/MyTools/NPM/QuoteDisplay/index.js -q";
 
-            const profileExt = ".ps1"
+            const profileExt = ".ps1";
             const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
             const powershellProfileFile = powershellProfileDir + "/Microsoft.PowerShell_profile";
             const appendLine = "\nnode " + npmPath;
@@ -61,16 +61,20 @@ async function main() {
                 switch (userInfo.System.Shell) {
                     case "pwsh.exe": {
                         if (checkWinPowershellProfile()) {
-                            if (checkRevert(powershellProfileFile + profileExt, appendLine)) {
-                                let revertChoice = await (prompts(prompt.revert, { onCancel }))
-                                const { RevertSelection } = revertChoice;
-                                if (RevertSelection) {
-                                    revertBack(powershellProfileFile, profileExt);
+                            fs.readFile(powershellProfileFile + profileExt, async function (err, data) {
+                                if (err) throw err;
+                                if (data.includes(appendLine)) {
+                                    let revertChoice = await (prompts(prompt.revert, { onCancel }))
+                                    const { RevertSelection } = revertChoice;
+                                    if (RevertSelection) {
+                                        revertBack(powershellProfileFile, profileExt);
+                                    } else {
+                                    };
                                 } else {
-                                };
-                            } else {
-                                performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
-                            }
+                                    performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
+                                }
+                            })
+
                         } else {
                             console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
                             fs.writeFileSync(powershellProfileFile + profileExt, "");
@@ -83,23 +87,25 @@ async function main() {
                     }
                 }
             } else {
-                switch (userInfo.System.Shell) {
-                    case "pwsh.exe": {
-                        if (checkWinPowershellProfile()) {
-                            if (checkRevert(powershellProfileFile + profileExt, appendLine)) {
-                                revertBack(powershellProfileFile, profileExt);
-                            } else {
-                                console.log("Nothing to revert");
-                            }
-                        } else {
-                            console.log("Profile does not exist.");
-                        };
-                        break;
-                    }
-                    default: {
-                        console.log("Shell not supported", userInfo);
-                    }
-                }
+                // switch (userInfo.System.Shell) {
+                //     case "pwsh.exe": {
+                //         if (checkWinPowershellProfile()) {
+                //             if (checkRevert(powershellProfileFile + profileExt, appendLine)) {
+                //                 console.log('shit is def here');
+                //                 revertBack(powershellProfileFile, profileExt);
+                //             } else {
+                //                 console.log("Nothing to revert");
+                //             }
+                //         } else {
+                //             console.log("Profile does not exist.");
+                //         };
+                //         break;
+                //     }
+                //     default: {
+                //         console.log("Shell not supported", userInfo);
+                //     }
+                // }
+                onCancel();
             }
             break;
         }
@@ -119,17 +125,25 @@ async function main() {
 };
 
 async function checkRevert(file, line) {
-    fs.readFile(file, async function (err, data) {
-        if (err) throw err;
-        if (data.includes(line)) {
-            console.log('shit is here');
-            return true
-        } else {
-            console.log('shit is NOT here');
-            return false;
-        }
-    })
+    try {
+        fs.readFile(file, async function (err, data) {
+            if (err) throw err;
+            if (data.includes(line)) {
+                return true;
+            } else {
+                return false;
+            }
+        })
+        return false;
+    } catch (err) {
+        return false
+    }
 };
+
+async function handlePowerShell() {
+
+}
+
 
 const prompt = {
     menu: [{
@@ -206,7 +220,6 @@ function checkWinPowershellProfile() {
 };
 
 function handlePowershell(npmPath, flag) {
-
 
 };
 
