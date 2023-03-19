@@ -17,10 +17,12 @@ const __dirname = dirname(__filename);
 const { version } = cRequire('./package.json');
 const { green, red, blue } = pkg;
 
-/**TODO : -  
- * 
+/** TODO : -  
  * npm root -g - command for finding root npm library
+//? /* NOTE - 
+ * ? - Detect OS and trickle down to the correct path for Shell use
  * ? - Code-split to have a function which can take in arbitrary arguments to "handleShell" 
+ * ? - In this way, I can use this function to handle the operations of using a different shell.
 */
 async function main() {
     switch (process.argv[2]) {
@@ -32,7 +34,7 @@ async function main() {
         }
     }
     displayTitle('tiny');
-    let menuChoice = await (prompts(prompt.menu, { onCancel }))
+    let menuChoice = await (prompts(prompt.menu, { onCancel }));
     const { MenuSelection } = menuChoice;
     switch (MenuSelection) {
         case "Quote": {
@@ -69,8 +71,8 @@ async function main() {
                     default: {
                         console.log("Shell not supported", userInfo);
                     }
-                }
-            }
+                };
+            };
             break;
         }
         case "About": {
@@ -79,7 +81,7 @@ CLI Quotes ${version} \n`) + '\n' +
                 '* Randomized Quotes\n' + '\n' +
                 '* Option available to run quote on each terminal session.\n' + '\n' +
                 '* To run quote once pass the flag -q.\n'
-            )
+            );
             break;
         }
         default: {
@@ -99,7 +101,7 @@ async function handlePowerShell(flag, npmPath) {
             fs.readFile(powershellProfileFile + profileExt, async function (err, data) {
                 if (err) throw err;
                 if (data.includes(appendLine)) {
-                    let revertChoice = await (prompts(prompt.revert, { onCancel }))
+                    let revertChoice = await (prompts(prompt.revert, { onCancel }));
                     const { RevertSelection } = revertChoice;
                     if (RevertSelection) {
                         revertBack(powershellProfileFile, profileExt);
@@ -107,13 +109,13 @@ async function handlePowerShell(flag, npmPath) {
                     };
                 } else {
                     performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
-                }
-            })
+                };
+            });
         } else {
-            console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
+            console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)"));
             fs.writeFileSync(powershellProfileFile + profileExt, "");
             performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
-        }
+        };
     } else {
         if (checkWinPowershellProfile()) {
             fs.readFile(powershellProfileFile + profileExt, async function (err, data) {
@@ -122,13 +124,13 @@ async function handlePowerShell(flag, npmPath) {
                     revertBack(powershellProfileFile, profileExt);
                 } else {
                     console.log(red("Appended line not found in profile!"));
-                }
-            })
+                };
+            });
         } else {
             console.log(red("Profile not found, select yes to create a profile to enable auto run!"));
-        }
-    }
-}
+        };
+    };
+};
 
 const prompt = {
     menu: [{
@@ -145,20 +147,20 @@ const prompt = {
     setup: [{
         type: 'confirm',
         name: 'SetupSelection',
-        message: 'Do you want to toggle the display of a quote on each new terminal instance?',
+        message: 'Do you want to display a quote on each new terminal session?',
         initial: false,
     }],
     revert: [{
         type: 'confirm',
         name: 'RevertSelection',
-        message: 'Autorun quotes is enabled, would you like to turn it off?',
+        message: 'Autorun quotes is already enabled, would you like to turn it off?',
         initial: false,
     }]
 };
 
 async function getQuote() {
     const response = await (await (fetch("https://api.quotable.io/random"))).json();
-    return `${response.content} \n- ${response.author} \n`
+    return `${response.content} \n- ${response.author} \n`;
 };
 
 async function getLoaderAndQuote() {
@@ -167,12 +169,12 @@ async function getLoaderAndQuote() {
         {
             discardStdin: false,
             indent: 0,
-            text: 'Loading...',
+            text: 'Loading quote...',
             spinner: cliSpinners.aesthetic,
             successText: r => r,
             failText: "Error"
         }
-    )
+    );
 };
 
 function executeCommand(command, shell) {
@@ -197,15 +199,15 @@ function checkWinPowershellProfile() {
                 return true;
             } else {
                 return false;
-            }
+            };
         };
     } catch (err) {
         return false;
-    }
+    };
 };
 
 async function promise(runFunc, msg) {
-    return msg
+    return msg;
 };
 
 async function revertBack(fileName, fileType) {
@@ -224,11 +226,14 @@ async function revertBack(fileName, fileType) {
             successText: "Reverted from backup!",
             failText: "Error"
         }
-    )
+    );
 };
 
 async function performBackupAndAppendNew(fileName, fileType, appendLine) {
+
+    //? /* NOTE - 
     //? Rename old profile file with a new extension .bak
+    console.log("");
     await oraPromise(promise(fs.rename(
         fileName + fileType,
         fileName + ".bak",
@@ -246,6 +251,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
         }
     );
 
+    //? /* NOTE - 
     //? Copy data from.bak file into a new profile file
     await oraPromise(promise(fs.copyFileSync(
         fileName + ".bak",
@@ -261,7 +267,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             failText: "Error"
         }
     );
-
+    //? /* NOTE - 
     //? Append the line that will execute the node script
     await oraPromise(promise(fs.appendFileSync(fileName + fileType, appendLine, 'utf8'), ""),
         {
@@ -272,7 +278,9 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             successText: "Appended run command to profile",
             failText: "Error"
         }
-    )
+    );
+
+    //? /* NOTE - 
     //? Completion Spinner
     await oraPromise(promise("", ""),
         {
@@ -284,6 +292,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             failText: "Error"
         }
     );
+    console.log("");
 };
 
 function checkOS() {
@@ -294,10 +303,10 @@ function checkOS() {
             OS: process.env.OS,
             Shell: ""
         }
-    }
+    };
     if (userInfo.System.Platform.toLowerCase().includes("win")) {
-        userInfo.System.Shell = "pwsh.exe" || "cmd.exe"
-    }
+        userInfo.System.Shell = "pwsh.exe" || "cmd.exe";
+    };
     return userInfo;
 };
 
