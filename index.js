@@ -20,10 +20,8 @@ const { green, red, blue } = pkg;
 /**TODO : -  
  * 
  * npm root -g - command for finding root npm library
- * ? - FIX ANSWERING NO WITH ESTABLISHED PROFILE IN SETUP. 
- * ? - 
+ * ? - Code-split to have a function which can take in arbitrary arguments to "handleShell" 
 */
-
 async function main() {
     switch (process.argv[2]) {
         case '-q': {
@@ -33,12 +31,9 @@ async function main() {
         default: {
         }
     }
-
     displayTitle('tiny');
-
     let menuChoice = await (prompts(prompt.menu, { onCancel }))
     const { MenuSelection } = menuChoice;
-
     switch (MenuSelection) {
         case "Quote": {
             await getLoaderAndQuote();
@@ -48,38 +43,17 @@ async function main() {
             let userInfo = checkOS();
             let setupChoice = await (prompts(prompt.setup, { onCancel }))
             const { SetupSelection } = setupChoice;
-            //? Once test published switch paths from dev to prod....
-            // const npmPath = os.userInfo().homedir + "/AppData/Roaming/npm/node_modules/cli-quotes/"
-            const npmPath = "C:/Coding/MyTools/NPM/QuoteDisplay/index.js -q";
 
-            const profileExt = ".ps1";
-            const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
-            const powershellProfileFile = powershellProfileDir + "/Microsoft.PowerShell_profile";
-            const appendLine = "\nnode " + npmPath;
+            //? Once test published switch paths from dev to prod....
+            //? Add a conditional here to check the operating system and based on the system we'll change the npm path correctly, right now, defaulting to windows.
+            // const npmPath = os.userInfo().homedir + "/AppData/Roaming/npm/node_modules/cli-quotes/"
+
+            const npmPath = "C:/Coding/MyTools/NPM/QuoteDisplay/index.js -q";
 
             if (SetupSelection) {
                 switch (userInfo.System.Shell) {
                     case "pwsh.exe": {
-                        if (checkWinPowershellProfile()) {
-                            fs.readFile(powershellProfileFile + profileExt, async function (err, data) {
-                                if (err) throw err;
-                                if (data.includes(appendLine)) {
-                                    let revertChoice = await (prompts(prompt.revert, { onCancel }))
-                                    const { RevertSelection } = revertChoice;
-                                    if (RevertSelection) {
-                                        revertBack(powershellProfileFile, profileExt);
-                                    } else {
-                                    };
-                                } else {
-                                    performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
-                                }
-                            })
-
-                        } else {
-                            console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
-                            fs.writeFileSync(powershellProfileFile + profileExt, "");
-                            performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
-                        }
+                        handlePowerShell("y", npmPath);
                         break;
                     }
                     default: {
@@ -87,31 +61,21 @@ async function main() {
                     }
                 }
             } else {
-                // switch (userInfo.System.Shell) {
-                //     case "pwsh.exe": {
-                //         if (checkWinPowershellProfile()) {
-                //             if (checkRevert(powershellProfileFile + profileExt, appendLine)) {
-                //                 console.log('shit is def here');
-                //                 revertBack(powershellProfileFile, profileExt);
-                //             } else {
-                //                 console.log("Nothing to revert");
-                //             }
-                //         } else {
-                //             console.log("Profile does not exist.");
-                //         };
-                //         break;
-                //     }
-                //     default: {
-                //         console.log("Shell not supported", userInfo);
-                //     }
-                // }
-                onCancel();
+                switch (userInfo.System.Shell) {
+                    case "pwsh.exe": {
+                        handlePowerShell("n", npmPath);
+                        break;
+                    }
+                    default: {
+                        console.log("Shell not supported", userInfo);
+                    }
+                }
             }
             break;
         }
         case "About": {
             console.log(red(`
-            CLI Quotes ${version} \n`) + '\n' +
+CLI Quotes ${version} \n`) + '\n' +
                 '* Randomized Quotes\n' + '\n' +
                 '* Option available to run quote on each terminal session.\n' + '\n' +
                 '* To run quote once pass the flag -q.\n'
@@ -124,26 +88,47 @@ async function main() {
     }
 };
 
-async function checkRevert(file, line) {
-    try {
-        fs.readFile(file, async function (err, data) {
-            if (err) throw err;
-            if (data.includes(line)) {
-                return true;
-            } else {
-                return false;
-            }
-        })
-        return false;
-    } catch (err) {
-        return false
+async function handlePowerShell(flag, npmPath) {
+    const profileExt = ".ps1";
+    const powershellProfileDir = `${os.userInfo().homedir}` + "/Documents/WindowsPowerShell";
+    const powershellProfileFile = powershellProfileDir + "/Microsoft.PowerShell_profile";
+    const appendLine = "\nnode " + npmPath;
+
+    if (flag == "y") {
+        if (checkWinPowershellProfile()) {
+            fs.readFile(powershellProfileFile + profileExt, async function (err, data) {
+                if (err) throw err;
+                if (data.includes(appendLine)) {
+                    let revertChoice = await (prompts(prompt.revert, { onCancel }))
+                    const { RevertSelection } = revertChoice;
+                    if (RevertSelection) {
+                        revertBack(powershellProfileFile, profileExt);
+                    } else {
+                    };
+                } else {
+                    performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
+                }
+            })
+        } else {
+            console.log(blue("\nHome Profile directory/file not found, creating Powershell Profile file ..(.ps1)\n"));
+            fs.writeFileSync(powershellProfileFile + profileExt, "");
+            performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
+        }
+    } else {
+        if (checkWinPowershellProfile()) {
+            fs.readFile(powershellProfileFile + profileExt, async function (err, data) {
+                if (err) throw err;
+                if (data.includes(appendLine)) {
+                    revertBack(powershellProfileFile, profileExt);
+                } else {
+                    console.log(red("Appended line not found in profile!"));
+                }
+            })
+        } else {
+            console.log(red("Profile not found, select yes to create a profile to enable auto run!"));
+        }
     }
-};
-
-async function handlePowerShell() {
-
 }
-
 
 const prompt = {
     menu: [{
@@ -219,10 +204,6 @@ function checkWinPowershellProfile() {
     }
 };
 
-function handlePowershell(npmPath, flag) {
-
-};
-
 async function promise(runFunc, msg) {
     return msg
 };
@@ -247,16 +228,6 @@ async function revertBack(fileName, fileType) {
 };
 
 async function performBackupAndAppendNew(fileName, fileType, appendLine) {
-    // fs.readFile(fileName + fileType, async function (err, data) {
-    //     if (err) throw err;
-    //     if (data.includes(appendLine)) {
-    //         let revertChoice = await (prompts(prompt.revert, { onCancel }))
-    //         const { RevertSelection } = revertChoice;
-    //         if (RevertSelection) {
-    //             revertBack(fileName, fileType);
-    //         } else {
-    //         };
-    //     } else {
     //? Rename old profile file with a new extension .bak
     await oraPromise(promise(fs.rename(
         fileName + fileType,
@@ -309,7 +280,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             indent: 2,
             text: 'Completing',
             spinner: cliSpinners.aesthetic,
-            successText: "Completed, open a new terminal session to try it! :)",
+            successText: "Completed, open a new terminal session to try it! :) \n",
             failText: "Error"
         }
     );
