@@ -17,6 +17,10 @@ const __dirname = dirname(__filename);
 const { version } = cRequire('./package.json');
 const { green, red, blue } = pkg;
 
+const src = 'zenquotes';
+
+
+
 /** TODO : -  
  * npm root -g - command for finding root npm library
 //? /* NOTE - 
@@ -24,6 +28,7 @@ const { green, red, blue } = pkg;
  * ? - Code-split to have a function which can take in arbitrary arguments to "handleShell" 
  * ? - In this way, I can use this function to handle the operations of using a different shell.
 */
+
 async function main() {
     switch (process.argv[2]) {
         case '-q': {
@@ -105,7 +110,6 @@ async function handlePowerShell(flag, npmPath) {
                     const { RevertSelection } = revertChoice;
                     if (RevertSelection) {
                         revertBack(powershellProfileFile, profileExt);
-                    } else {
                     };
                 } else {
                     performBackupAndAppendNew(powershellProfileFile, profileExt, appendLine);
@@ -159,9 +163,24 @@ const prompt = {
 };
 
 async function getQuote() {
-    const response = await (await (fetch("https://api.quotable.io/random"))).json();
-    return `${response.content} \n- ${response.author} \n`;
-};
+
+    let response = ''
+    switch (src) {
+        case 'quoteable': {
+            response = await (await (fetch("https://api.quotable.io/random"))).json();
+            return `${response.content} \n- ${response.author} \n`;
+        }
+        case 'zenquotes': {
+            response = await (await (fetch("https://zenquotes.io/api/random"))).json();
+            return `${response[0].q} \n- ${response[0].a} \n`;
+        }
+        default: {
+            console.log("API not found");
+            break;
+        }
+    };
+}
+
 
 async function getLoaderAndQuote() {
     console.log("");
@@ -267,6 +286,7 @@ async function performBackupAndAppendNew(fileName, fileType, appendLine) {
             failText: "Error"
         }
     );
+
     //? /* NOTE - 
     //? Append the line that will execute the node script
     await oraPromise(promise(fs.appendFileSync(fileName + fileType, appendLine, 'utf8'), ""),
@@ -334,3 +354,6 @@ function onCancel() {
 };
 
 main();
+
+
+// console.log(await getQuote());
