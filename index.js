@@ -17,16 +17,15 @@ const __dirname = dirname(__filename);
 const { version } = cRequire('./package.json');
 const { green, red, blue } = pkg;
 
-const src = 'zenquotes';
-
-
-
 /** TODO : -  
  * npm root -g - command for finding root npm library
 //? /* NOTE - 
  * ? - Detect OS and trickle down to the correct path for Shell use
- * ? - Code-split to have a function which can take in arbitrary arguments to "handleShell" 
+ * ? - Code-split to have a function which can take in arbitrary arguments to "handleShell"
  * ? - In this way, I can use this function to handle the operations of using a different shell.
+ * ? - Pull 50 quotes to store locally from zenquotes and then use the data within to pull quotes.
+ * ?    - In this way, I can reduce network reqs. And only reach out for another request when necessary.
+ * ?   Create options file.
 */
 
 async function main() {
@@ -74,19 +73,24 @@ async function main() {
                         break;
                     }
                     default: {
-                        console.log("Shell not supported", userInfo);
+                        console.log(red("Shell not supported"), userInfo);
                     }
                 };
             };
             break;
         }
         case "About": {
-            console.log(red(`
+            console.log(green(`
 CLI Quotes ${version} \n`) + '\n' +
                 '* Randomized Quotes\n' + '\n' +
                 '* Option available to run quote on each terminal session.\n' + '\n' +
-                '* To run quote once pass the flag -q.\n'
+                '* To run quote once pass the flag -q.\n' + '\n' +
+                '* ZenQuotes API will pull 50 quotes, these will be stored locally and used, opposed to numerous network requests.\n'
             );
+            break;
+        }
+        case "Options": {
+
             break;
         }
         default: {
@@ -135,7 +139,9 @@ async function handlePowerShell(flag, npmPath) {
         };
     };
 };
-
+// ---------------------------------------------------
+// SECTION PROMPTS
+// ---------------------------------------------------
 const prompt = {
     menu: [{
         type: 'select',
@@ -144,7 +150,8 @@ const prompt = {
         choices: [
             { title: '🗨️ Give Me A Quote', description: '', value: 'Quote' },
             { title: 'ℹ️ About', description: '', value: 'About' },
-            { title: '🛠️ Setup', description: 'Optional setup', value: 'Setup' },
+            { title: '🛠️ Setup', description: 'For running a quote on a new terminal instance', value: 'Setup' },
+            // { title: '💻 Options', description: 'API options', value: 'Options' },
         ],
         initial: 0,
     }],
@@ -163,24 +170,48 @@ const prompt = {
 };
 
 async function getQuote() {
-
-    let response = ''
-    switch (src) {
-        case 'quoteable': {
-            response = await (await (fetch("https://api.quotable.io/random"))).json();
-            return `${response.content} \n- ${response.author} \n`;
+    let response;
+    let apiOptions = {
+        src: 'zenquotes',
+        api1: {
+            path: 'https://api.quotable.io/random'
+        },
+        api2: {
+            path: 'https://zenquotes.io/api/random',
+            batchPath: 'https://zenquotes.io/api/quotes/50'
         }
-        case 'zenquotes': {
-            response = await (await (fetch("https://zenquotes.io/api/random"))).json();
-            return `${response[0].q} \n- ${response[0].a} \n`;
+    }
+    try {
+        switch (apiOptions.src) {
+            case 'quoteable': {
+                response = await (await (fetch("https://api.quotable.io/random"))).json();
+                return `${response.content} \n- ${response.author} \n`;
+            }
+            case 'zenquotes': {
+                if (fs.readFileSync(__dirname + '/ZenQuotes.json')) {
+                    console.log('foil exists');
+                    return;
+                }
+                else {
+                    response = await (await (fetch("https://zenquotes.io/api/random"))).json();
+                    return `${response[0].q} \n- ${response[0].a} \n`;
+                }
+            }
+            default: {
+                console.log(red("Cannot reach API..."));
+                return;
+            }
         }
-        default: {
-            console.log("API not found");
-            break;
-        }
+    } catch (err) {
+        console.log(red(`Error: ${err}`))
+        return;
     };
 }
 
+async function getBatchQuotesFromZenQuotes() {
+    response = await (await (fetch("https://zenquotes.io/api/quotes/50"))).json();
+    fs.writeFileSync(__dirname + '/ZenQuotes.json', response, "utf8")
+}
 
 async function getLoaderAndQuote() {
     console.log("");
