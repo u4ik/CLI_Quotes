@@ -21,10 +21,8 @@ const { green, red, blue } = pkg;
  * npm root -g - command for finding root npm library
 //? /* NOTE - 
  * ? - Detect OS and trickle down to the correct path for Shell use
- * ? - Code-split to have a function which can take in arbitrary arguments to "handleShell"
- * ? - In this way, I can use this function to handle the operations of using a different shell.
- * ? - Pull 50 quotes to store locally from zenquotes and then use the data within to pull quotes.
- * ?    - In this way, I can reduce network reqs. And only reach out for another request when necessary.
+ * ?    - Code-split to have a function which can take in arbitrary arguments to "handleShell"
+ * ?     - In this way, I can use this function to handle the operations of using a different shell.
  * ?   Create options file.
 */
 
@@ -184,22 +182,20 @@ async function getQuote() {
     try {
         switch (apiOptions.src) {
             case 'quoteable': {
-                response = await (await (fetch("https://api.quotable.io/random"))).json();
+                response = await (await (fetch(apiOptions.api1.path))).json();
                 return `${response.content} \n- ${response.author} \n`;
             }
             case 'zenquotes': {
-                if (fs.readFileSync(__dirname + '/ZenQuotes.json')) {
-                    console.log('foil exists');
-                    return;
+                try {
+                    if (fs.readFileSync(__dirname + '/ZenQuotes.json')) {
+                        return await readQuoteFromBatch();
+                    }
+                } catch (err) {
+                    if (err.code === 'ENOENT') {
+                        await saveBatchQuotes(await getBatchQuotesFromZenQuotes());
+                        return await getQuote();
+                    }
                 }
-                else {
-                    response = await (await (fetch("https://zenquotes.io/api/random"))).json();
-                    return `${response[0].q} \n- ${response[0].a} \n`;
-                }
-            }
-            default: {
-                console.log(red("Cannot reach API..."));
-                return;
             }
         }
     } catch (err) {
@@ -207,24 +203,55 @@ async function getQuote() {
         return;
     };
 }
-
 async function getBatchQuotesFromZenQuotes() {
-    response = await (await (fetch("https://zenquotes.io/api/quotes/50"))).json();
-    fs.writeFileSync(__dirname + '/ZenQuotes.json', response, "utf8")
+    let response = await (await (fetch("https://zenquotes.io/api/quotes/50"))).json();
+    return response;
+}
+async function saveBatchQuotes(res) {
+    fs.writeFileSync(__dirname + '/ZenQuotes.json', JSON.stringify(res), "utf8")
+}
+async function readQuoteFromBatch() {
+    let result = JSON.parse(fs.readFileSync(__dirname + '/ZenQuotes.json', "utf8"));
+    if (checkBatchAmount(result)) {
+        let randomIdx = Math.floor(Math.random() * result.length)
+        let single = result[randomIdx];
+        result.splice(randomIdx, 1);
+        fs.writeFileSync(__dirname + '/ZenQuotes.json', JSON.stringify(result), "utf8");
+        return single.q + '\n' + '-' + single.a + '\n'
+    } else {
+        await saveBatchQuotes(await getBatchQuotesFromZenQuotes());
+        return await readQuoteFromBatch();
+    }
+}
+
+function checkBatchAmount(res) {
+    if (res.length > 0) {
+        return true;
+    }
+    return false;
+}
+
+async function removeQuoteFromBatch(res, idx) {
+    return res.splice(idx, 1);
 }
 
 async function getLoaderAndQuote() {
     console.log("");
-    await oraPromise(getQuote(),
-        {
-            discardStdin: false,
-            indent: 0,
-            text: 'Loading quote...',
-            spinner: cliSpinners.aesthetic,
-            successText: r => r,
-            failText: "Error"
-        }
-    );
+    try {
+        await oraPromise(getQuote(),
+            {
+                discardStdin: false,
+                indent: 0,
+                text: 'Loading quote',
+                spinner: cliSpinners.aesthetic,
+                successText: r => r,
+                failText: "Error"
+            }
+        );
+    } catch (err) {
+        console.log(err);
+        return;
+    }
 };
 
 function executeCommand(command, shell) {
@@ -385,6 +412,3 @@ function onCancel() {
 };
 
 main();
-
-
-// console.log(await getQuote());
