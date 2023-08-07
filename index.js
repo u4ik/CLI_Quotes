@@ -126,9 +126,8 @@ async function handlePowerShell(flag, npmPath) {
         if (checkWinPowershellProfile()) {
             fs.readFile(powershellProfileFile + profileExt, async function (err, data) {
                 if (err) throw err;
-                if (data.includes(appendLine)) {
-                    revertBack(powershellProfileFile, profileExt);
-                } else {
+                if (data.includes(appendLine)) revertBack(powershellProfileFile, profileExt);
+                else {
                     console.log(red("Appended line not found in profile!"));
                 };
             });
