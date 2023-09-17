@@ -36,8 +36,8 @@ Feel free to reach out with any questions, issues, or suggestions. Happy quoting
 
 ---
 
-Made with ❤️ by [Your Name]
+Made with ❤️
 
-[GitHub Repository](https://github.com/yourusername/cli-quotes)
+[GitHub Repository](https://github.com/u4ik/CLI_Quotes)
 
-[Report Issues](https://github.com/yourusername/cli-quotes/issues)
+[Report Issues](https://github.com/u4ik/CLI_Quotes/issues)
