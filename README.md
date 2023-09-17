@@ -7,7 +7,7 @@ Cli-Quotes is a versatile Node.js console application that brings you an array o
 ## Features 🚀
 
 - Access a wide variety of quotes right in your terminal.
-- No need to rely on external APIs; all quotes are locally stored.
+- No need for multiple network requests, the quotes are batch stored, and are read from locally.
 - Minimal setup required.
 
 ## Installation 📦
