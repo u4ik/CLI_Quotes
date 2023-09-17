@@ -83,7 +83,7 @@ CLI Quotes ${version} \n`) + '\n' +
                 '* Randomized Quotes\n' + '\n' +
                 '* Option available to run quote on each terminal session.\n' + '\n' +
                 '* To run quote once pass the flag -q.\n' + '\n' +
-                '* ZenQuotes API will pull 50 quotes, these will be stored locally and used, opposed to numerous network requests.\n'
+                '* ZenQuotes API will pull 50 quotes, these will be stored locally and used.\n'
             );
             break;
         }
