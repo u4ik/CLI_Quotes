@@ -19,6 +19,7 @@ CLI_Quotes is a versatile Node.js console application that brings you an array o
 - Access a wide variety of quotes right in your terminal.
 - No need for multiple network requests, the quotes are batch stored, and are read from locally.
 - Minimal setup required.
+- If you have Powershell, you have the option to run a quote on each new terminal instance. (Using Profile .ps1)
 
 ## Installation 📦
 
@@ -29,6 +30,10 @@ npm i -g cli-quotes
 ```
 
 ## Usage 🧘
+
+```bash
+givequote
+```
 
 ### Display a Random Quote
 
