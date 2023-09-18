@@ -35,7 +35,7 @@ npm i -g cli-quotes
 To view a random quote, simply run:
 
 ```bash
-quote -q
+givequote -q
 ```
 
 ## Enjoy the Wisdom! 🌟
