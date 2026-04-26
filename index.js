@@ -8,6 +8,7 @@ import CFonts from 'cfonts';
 import ora, { oraPromise } from 'ora';
 import pkg from 'kleur';
 import { exec } from "child_process";
+import lockfile from 'proper-lockfile';
 const cRequire = createRequire(import.meta.url);
 import { createRequire } from "module";
 import { dirname } from 'path';
@@ -185,6 +186,7 @@ async function getQuote() {
                 return `${response.content} \n- ${response.author} \n`;
             }
             case 'zenquotes': {
+                console.log(response);
                 try {
                     if (fs.readFileSync(__dirname + '/ZenQuotes.json')) {
                         return await readQuoteFromBatch();
@@ -207,19 +209,53 @@ async function getBatchQuotesFromZenQuotes() {
     return response;
 }
 async function saveBatchQuotes(res) {
-    fs.writeFileSync(__dirname + '/ZenQuotes.json', JSON.stringify(res), "utf8")
+    const file = __dirname + '/ZenQuotes.json';
+    let release;
+    try {
+        if (!fs.existsSync(file)) fs.writeFileSync(file, '[]', 'utf8');
+        release = await lockfile.lock(file, { retries: { retries: 5, factor: 2 } });
+        fs.writeFileSync(file, JSON.stringify(res), "utf8");
+    } catch (e) {
+        console.error("Lock error during save:", e);
+    } finally {
+        if (release) await release();
+    }
 }
 async function readQuoteFromBatch() {
-    let result = JSON.parse(fs.readFileSync(__dirname + '/ZenQuotes.json', "utf8"));
-    if (checkBatchAmount(result)) {
-        let randomIdx = Math.floor(Math.random() * result.length)
+    const file = __dirname + '/ZenQuotes.json';
+    let release;
+    try {
+        if (!fs.existsSync(file)) fs.writeFileSync(file, '[]', 'utf8');
+        release = await lockfile.lock(file, { retries: { retries: 5, factor: 2 } });
+
+        let result = JSON.parse(fs.readFileSync(file, "utf8"));
+        
+        if (!checkBatchAmount(result)) {
+            // It's empty or invalid
+            const newRes = await getBatchQuotesFromZenQuotes();
+            fs.writeFileSync(file, JSON.stringify(newRes), "utf8");
+            result = newRes;
+        }
+
+        let randomIdx = Math.floor(Math.random() * result.length);
         let single = result[randomIdx];
         result.splice(randomIdx, 1);
-        fs.writeFileSync(__dirname + '/ZenQuotes.json', JSON.stringify(result), "utf8");
-        return single.q + '\n' + '-' + single.a + '\n'
-    } else {
-        await saveBatchQuotes(await getBatchQuotesFromZenQuotes());
-        return await readQuoteFromBatch();
+        fs.writeFileSync(file, JSON.stringify(result), "utf8");
+        return single.q + '\n' + '-' + single.a + '\n';
+    } catch (err) {
+        // If file is corrupted (e.g. JSON.parse error) or lock failed
+        if (release) {
+            await release(); // Ensure we release early before attempting any retry
+            release = null;
+        }
+        
+        if (err.name !== 'SyntaxError') {
+            // If it was a JSON parse error, clear the file.
+            fs.writeFileSync(file, '[]', 'utf8');
+        }
+        return "Could not retrieve quote at this time.";
+    } finally {
+        if (release) await release();
     }
 }
 
