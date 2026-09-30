@@ -186,7 +186,6 @@ async function getQuote() {
                 return `${response.content} \n- ${response.author} \n`;
             }
             case 'zenquotes': {
-                console.log(response);
                 try {
                     if (fs.readFileSync(__dirname + '/ZenQuotes.json')) {
                         return await readQuoteFromBatch();
